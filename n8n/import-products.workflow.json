@@ -1,0 +1,277 @@
+{
+  "name": "Importar produtos (nothingprojector)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "41219df9-07b7-42b8-84bc-29bf896b00d7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/trpc/auth.signIn?batch=1",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"0\":{\"json\":{\"email\":\"SEU_EMAIL@exemplo.com\",\"password\":\"SUA_SENHA\"}}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [224, 0],
+      "id": "39ff7dc4-e84e-44e2-a3e8-2013f3fd5985",
+      "name": "Login"
+    },
+    {
+      "parameters": {
+        "url": "https://brazil.nothingprojector.com/collections/frete-gratis-em-estoque?srsltid=AYCX9vIbXFl9pxhK9x1aFfyDpgXQyl9x__eK0SFq_xprF0LxOfTPjzla",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [448, 0],
+      "id": "fb31095b-c925-4b93-8d12-143d0c7baed5",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "name",
+              "cssSelector": ".product-card__title",
+              "returnArray": true
+            },
+            {
+              "key": "price",
+              "cssSelector": ".price-list",
+              "skipSelectors": ".sr-only",
+              "returnArray": true
+            },
+            {
+              "key": "url",
+              "cssSelector": ".product-card__title a",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            },
+            {
+              "key": "image",
+              "cssSelector": ".product-card__image.product-card__image--primary.aspect-natural",
+              "returnValue": "attribute",
+              "attribute": "src",
+              "returnArray": true
+            },
+            {
+              "key": "info",
+              "cssSelector": ".product-card__info",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [672, 0],
+      "id": "9c689e83-c8fc-4748-9481-3391eb1e5256",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.all()[0].json;\nconst ORIGIN = 'https://brazil.nothingprojector.com';\n\n// A API exige URLs http(s) completas; o site devolve \"/products/...\" e \"//cdn...\".\nconst toAbsolute = (value) => {\n    if (!value) return undefined;\n    if (/^https?:\\/\\//i.test(value)) return value;\n    if (value.startsWith('//')) return 'https:' + value;\n    return ORIGIN + (value.startsWith('/') ? value : '/' + value);\n};\n\n// O nó HTML anexa o href ao texto (\"Nome [/products/...]\") e mantém as quebras de linha.\nconst cleanName = (value) =>\n    (value ?? '').replace(/\\[\\/[^\\]]*\\]/g, '').replace(/\\s+/g, ' ').trim();\n\nconst decode = (value) => value\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&amp;/g, '&');\n\nconst toText = (html) => decode(\n    (html ?? '')\n        .replace(/<svg[\\s\\S]*?<\\/svg>/gi, '')\n        .replace(/<br\\s*\\/?>/gi, ' · ')\n        .replace(/<[^>]+>/g, ' ')\n).replace(/\\s+/g, ' ').trim();\n\nconst match = (html, regex) => (html.match(regex) ?? [])[1];\n\n// Monta a descrição a partir do bloco .product-card__info: destaques do card\n// (brinde, estoque, preço, envio) e a ficha técnica (\"Marca: ...\", \"Resolução: ...\").\n// Ficam de fora o título (já é o name) e o selo de avaliações oculto.\nconst buildDescription = (html) => {\n    if (!html) return undefined;\n    const lines = [];\n\n    const free = toText(match(html, /product-card__free_text[^>]*>([\\s\\S]*?)<\\/div>/));\n    if (free) lines.push(free);\n\n    const stock = toText(match(html, /product-card__importa[^>]*>([\\s\\S]*?)<\\/div>/));\n    if (stock) lines.push(stock);\n\n    // Cada preço (<sale-price>, <compare-at-price>) traz o rótulo num span sr-only.\n    const priceHtml = match(html, /<price-list[^>]*>([\\s\\S]*?)<\\/price-list>/) ?? '';\n    for (const [, tag] of priceHtml.matchAll(/<([a-z-]+-price)[^>]*>[\\s\\S]*?<\\/\\1>/g)) {\n        const block = match(priceHtml, new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`));\n        const label = toText(match(block, /<span class=\"sr-only\">([\\s\\S]*?)<\\/span>/)) || 'Preço';\n        const price = toText(block.replace(/<span class=\"sr-only\">[\\s\\S]*?<\\/span>/g, ''));\n        if (price) lines.push(`${label}: ${price}`);\n    }\n\n    const dispatch = toText(match(html, /product-dispatch[^>]*>([\\s\\S]*?)<\\/div>/));\n    if (dispatch) lines.push(dispatch);\n\n    for (const [, item] of html.matchAll(/<div class=\"item\">([\\s\\S]*?)<\\/div>/g)) {\n        const spans = [...item.matchAll(/<span[^>]*>([\\s\\S]*?)<\\/span>/g)].map(([, s]) => toText(s));\n        const [label, value] = [spans[0], spans.slice(1).join(' ')];\n        if (label && value) lines.push(`${label}: ${value.replace(/\\s*:\\s*/g, ':')}`);\n    }\n\n    return lines.length ? lines.join('\\n') : undefined;\n};\n\nconst result = data.name.map((name, index) => ({\n    name: cleanName(name),\n    description: buildDescription(data.info?.[index]),\n    price: data.price[index],\n    url: toAbsolute(data.url[index]),\n    image: toAbsolute(data.image[index]),\n}));\n\nreturn result.map(item => ({\n    json: item\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 0],
+      "id": "c541a439-cd45-4193-bbd6-ff69ee09c58e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/v1/products",
+        "sendBody": true,
+        "specifyBody": "=keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.name }}"
+            },
+            {
+              "name": "externalLink",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "imageUrl",
+              "value": "={{ $json.image }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.description }}"
+            }
+          ]
+        },
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ [].concat($('Login').first().json.headers['set-cookie']).find(c => c.startsWith('av_session=')).split(';')[0] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1568, 0],
+      "id": "45355d87-1769-4cb3-9971-39dbbcdfd788",
+      "name": "HTTP Request1",
+      "onError": "continueRegularOutput",
+      "notes": "Continua em caso de erro (ex.: 409 de link duplicado); o item com falha sai com o campo error."
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3000/api/v1/products",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "24"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "cursor",
+                    "value": "={{ $response.headers['x-next-cursor'] }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.headers['x-next-cursor'] }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 0],
+      "id": "f8f8e18e-ccb9-49b3-8c28-b750f5fb63b7",
+      "name": "Produtos existentes",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "notes": "Lê todas as páginas de GET /api/v1/products seguindo o header X-Next-Cursor."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compara pelo externalLink, ignorando espaços e barra final.\nconst normalize = (link) => (link ?? '').trim().replace(/[/]+$/, '');\n\n// A API devolve um array por página; o n8n entrega cada produto como um item.\nconst existingLinks = new Set(\n    $input.all().map((item) => normalize(item.json.externalLink)).filter(Boolean)\n);\n\nconst seen = new Set(existingLinks);\nconst novos = [];\nfor (const item of $('Code in JavaScript').all()) {\n    const link = normalize(item.json.url);\n    if (!link || seen.has(link)) continue;\n    seen.add(link);\n    novos.push({ json: item.json });\n}\n\nreturn novos;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1344, 0],
+      "id": "7ae5febd-4450-4b03-9ea5-325f586a53ef",
+      "name": "Remover duplicados"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Produtos existentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Produtos existentes": {
+      "main": [
+        [
+          {
+            "node": "Remover duplicados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remover duplicados": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

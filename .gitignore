@@ -1,6 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,32 +8,50 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
+next-env.d.ts
+tsconfig.tsbuildinfo
 
-# production
+# Production
 /build
 
-# misc
+# Misc
 .DS_Store
 *.pem
+*.log
+temp.txt
+tree.txt
 
-# debug
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# Env files (o .env.example documenta as variáveis e deve subir)
 .env*
+!.env.example
 
-# vercel
+# Scripts locais de manutenção (não fazem parte do app)
+/copy.js
+/copy-arch.js
+/restore.js
+/restore.ps1
+/envcheck.js
+/temp_check.js
+/test-bcrypt.js
+/tree.js
+
+# Vercel
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
-next-env.d.ts
+
+# Biome
+.biome/
