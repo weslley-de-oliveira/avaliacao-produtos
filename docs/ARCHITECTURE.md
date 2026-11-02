@@ -86,6 +86,26 @@ Cliente (React Query) ──┘        │               │              │
       imagem: alimenta os `remotePatterns` do `next.config.ts` e a validação do
       `imageUrl`, então uma URL que quebraria o `next/image` é recusada na API.
 
+### Resumo das avaliações por IA
+
+    - `ReviewSummarizer` (src/server/ai) é a porta usada pelo
+      `ReviewSummaryService`; a implementação chama o `reviewSummaryAgent` do
+      Mastra (src/mastra), carregado sob demanda.
+    - Cache em `product_review_summaries`: o resumo é reaproveitado enquanto o
+      total de avaliações não muda; ao mudar, é gerado de novo com as 200
+      avaliações mais recentes.
+    - Modelo padrão: `google/gemini-3.1-flash-lite` (plano gratuito), trocável por
+      `AI_SUMMARY_MODEL`; o raciocínio do Gemini é desligado no resumo para não
+      consumir o limite de saída.
+    - Falha ou ausência da IA (sem a chave do provedor) não quebra a página:
+      devolve o último resumo salvo ou o estado `unavailable`.
+    - Após uma falha do modelo, o produto fica 5 minutos sem nova tentativa
+      (pausa por instância): a página responde na hora em vez de esperar o
+      provedor recusar de novo. O agente não faz novas tentativas internas.
+    - Os comentários são dados de usuários: entram como JSON, com `<`/`>`
+      escapados, dentro de um bloco delimitado, e o agente é instruído a não
+      seguir instruções escritas neles.
+
 ### Decisões
 
     - Os contratos REST seguem as specs e não foram unificados: `GET
@@ -113,12 +133,13 @@ Cliente (React Query) ──┘        │               │              │
         - services: regras de negócio
         - repositories: interfaces e implementações Supabase
         - storage: interface de armazenamento de imagens (Supabase Storage)
+        - ai: porta do resumo por IA e adaptador do Mastra
         - http: tradução de erros e utilitários das rotas REST
         - auth: conta autenticada da requisição e autorização (admin)
         - security: hash de senha
         - testing: repositórios em memória para os testes
     - src/trpc: client/provider do tRPC + React Query
-    - src/mastra: agentes internos (scaffold, não exposto por HTTP)
+    - src/mastra: agentes de IA (resumo das avaliações e suporte)
     - database: schema, migrações e seed SQL
     - n8n: workflow de importação de produtos (sem credenciais)
 

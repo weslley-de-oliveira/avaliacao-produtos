@@ -168,11 +168,15 @@ avaliações como fichas empilhadas. Nada de cards arredondados genéricos.
 - A descrição preserva as quebras de linha (`whitespace-pre-line`): a dos
   produtos importados pelo n8n é uma ficha técnica com uma informação por
   linha. É o único lugar onde a descrição aparece.
-- Coluna lateral com “Nota geral”, estrelas, quantidade e distribuição por nota
-  em barras horizontais (motivo gráfico já usado no sign-up).
+- Abaixo do hero, em duas colunas: à esquerda a “Nota geral”, estrelas,
+  quantidade e distribuição por nota em barras horizontais (motivo gráfico já
+  usado no sign-up).
 - Lista de avaliações em fichas de papel com avatar, nome, data, estrelas e
   comentário.
-- Formulário em uma ficha branca com faixa `accent` após a lista.
+- Logo abaixo da nota, o resumo das avaliações gerado por IA (card preto com
+  selo “✦ IA”, ver `docs/ARCHITECTURE.md`).
+- À direita, o formulário em uma ficha branca com faixa `accent`.
+- A lista de avaliações ocupa a largura toda, abaixo das duas colunas.
 - Visitante vê um bloco preto (`ink`) “Entre para avaliar” no lugar do
   formulário.
 
@@ -191,24 +195,28 @@ avaliações como fichas empilhadas. Nada de cards arredondados genéricos.
 │ │  [Ver na loja ↗]                                                 │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                      │
-│  Avaliações (12)                         ┌────────────────────────┐  │
-│  ──────────────────────────────────────  │ NOTA GERAL             │  │
-│  ┌────────────────────────────────────┐  │ 4,6  ★★★★★            │  │
-│  │ (avatar) Maria Silva · há 2 dias   │  │ 12 avaliações          │  │
-│  │ ★★★★★  Excelente custo-benefício. │  │ 5 ████████████ 8       │  │
-│  └────────────────────────────────────┘  │ 4 █████ 2              │  │
-│  ┌────────────────────────────────────┐  │ 3 ██ 1                 │  │
-│  │ (avatar) João Souza · há 5 dias    │  │ 2 ██ 1                 │  │
-│  │ ★★★★☆  Bom, mas...                │  │ 1 0                    │  │
-│  └────────────────────────────────────┘  └────────────────────────┘  │
-│  [ Carregar mais ]                                                   │
+│  ┌──────────────────────────┐  ┌──────────────────────────────────┐  │
+│  │ NOTA GERAL               │  │ Sua avaliação                    │  │
+│  │ 4,6 ★★★★★  12 avaliações │  │ Nota: ☆ ☆ ☆ ☆ ☆                  │  │
+│  │ 5 ████████████ 8         │  │ [ Comentário...             ]    │  │
+│  │ 4 █████ 2                │  │ [ Publicar avaliação ]           │  │
+│  │ 1 0                      │  │                                  │  │
+│  └──────────────────────────┘  │ Visitante: bloco preto           │  │
+│  ┌──────────────────────────┐  │ “Entre para avaliar” [ Entrar ]  │  │
+│  │ RESUMO        ✦ IA       │  └──────────────────────────────────┘  │
+│  │ Sentimento geral misto:  │                                        │
+│  │ elogios à imagem e       │                                        │
+│  │ críticas ao ventilador.  │                                        │
+│  │ Gerado por IA (12 aval.) │                                        │
+│  └──────────────────────────┘                                        │
 │                                                                      │
+│  Avaliações (12)                                                     │
+│  ──────────────────────────────────────────────────────────────────  │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │ Sua avaliação                                                  │  │
-│  │ Nota: ☆ ☆ ☆ ☆ ☆                                               │  │
-│  │ [ Comentário...                                            ]   │  │
-│  │ [ Publicar avaliação ]                                         │  │
+│  │ (avatar) Maria Silva · há 2 dias   ★★★★★                       │  │
+│  │ Excelente custo-benefício.                                     │  │
 │  └────────────────────────────────────────────────────────────────┘  │
+│  [ Carregar mais ]                                                   │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -225,21 +233,26 @@ avaliações como fichas empilhadas. Nada de cards arredondados genéricos.
 │ │ Fone Aurora          │ │
 │ │ descrição            │ │
 │ └──────────────────────┘ │
-│ ┌──────────────────────┐ │
-│ │ NOTA GERAL           │ │
-│ │ 4,6 ★★★★★  12        │ │
-│ │ 5 ████████████       │ │
-│ └──────────────────────┘ │
+│ ┌────────────────────┐   │
+│ │ NOTA GERAL         │   │
+│ │ 4,6 ★★★★★  12      │   │
+│ │ 5 ████████████     │   │
+│ └────────────────────┘   │
+│ ┌────────────────────┐   │
+│ │ RESUMO          ✦ IA │ │
+│ │ Sentimento geral... │  │
+│ └────────────────────┘   │
+│ ┌────────────────────┐   │
+│ │ Sua avaliação      │   │
+│ │ Nota: ☆ ☆ ☆ ☆ ☆    │   │
+│ │ [ Publicar ]       │   │
+│ └────────────────────┘   │
 │ Avaliações               │
-│ ┌──────────────────────┐ │
-│ │ Maria · ★★★★★        │ │
-│ │ Excelente...         │ │
-│ └──────────────────────┘ │
+│ ┌────────────────────┐   │
+│ │ Maria · ★★★★★      │   │
+│ │ Excelente...       │   │
+│ └────────────────────┘   │
 │ [ Carregar mais ]        │
-│ ┌──────────────────────┐ │
-│ │ Entre para avaliar   │ │
-│ │ [ Entrar ]           │ │
-│ └──────────────────────┘ │
 └──────────────────────────┘
 ```
 

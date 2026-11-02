@@ -83,3 +83,18 @@ export const feedbackFormSchema = z.object({
 });
 
 export type FeedbackFormInput = z.infer<typeof feedbackFormSchema>;
+
+export const reviewSummaryInputSchema = z.object({
+  productId: z.string().min(1, 'Id do produto é obrigatório'),
+});
+
+/**
+ * Resumo das avaliações gerado por IA:
+ * - `ready`: resumo disponível (`feedbackCount` = avaliações consideradas);
+ * - `insufficient`: o produto ainda não tem avaliações suficientes;
+ * - `unavailable`: IA não configurada ou falhou, e não há resumo salvo.
+ */
+export type ReviewSummary =
+  | { status: 'ready'; summary: string; feedbackCount: number; generatedAt: string }
+  | { status: 'insufficient' }
+  | { status: 'unavailable' };

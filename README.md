@@ -9,11 +9,16 @@ workflow do n8n importa produtos de uma loja externa automaticamente.
 
 - **Catálogo** com scroll infinito (paginação por cursor) e cards com imagem e
   nome.
-- **Página do produto** com imagem, descrição, link para a loja, nota geral,
-  distribuição por nota e lista de avaliações paginada.
+- **Página do produto** com imagem, descrição e link para a loja; abaixo, a nota
+  geral (com a distribuição por nota) e o resumo por IA à esquerda, o formulário
+  de avaliação à direita e a lista paginada de avaliações em largura total.
 - **Cadastro e login** com sessão própria em cookie httpOnly assinado (HMAC).
 - **Avaliações** de 1 a 5 com comentário, disponíveis apenas para quem está
   logado.
+- **Resumo das avaliações por IA**: um agente do Mastra lê todos os comentários
+  do produto e escreve um resumo geral, exibido em destaque (selo “IA”) abaixo
+  do gráfico de notas. O resumo fica em cache e só é refeito quando chegam
+  avaliações novas.
 - **Cadastro de produtos** para administradores, com upload da imagem para o
   Supabase Storage (tipo validado pelo conteúdo do arquivo, até 5 MB).
 - **API REST** (`/api/v1/*`) para integrações, ao lado da API tRPC usada pela
@@ -30,7 +35,7 @@ workflow do n8n importa produtos de uma loja externa automaticamente.
 | Back-end | Route Handlers do Next.js, [tRPC 11](https://trpc.io), Zod, superjson, bcryptjs, nanoid |
 | Banco de dados | [Supabase](https://supabase.com) (PostgreSQL) com RLS e Supabase Storage |
 | Automação | [n8n](https://n8n.io) em Docker (Docker Compose) |
-| IA | [Mastra](https://mastra.ai): agente interno de suporte (scaffold, ainda não exposto por HTTP) |
+| IA | [Mastra](https://mastra.ai): agente que resume as avaliações de cada produto (Google Gemini 3.1 Flash-Lite por padrão, com plano gratuito) e agente interno de suporte (scaffold) |
 | Qualidade | Vitest, Biome (lint e formatação), TypeScript estrito |
 | Deploy | Pensado para a Vercel |
 
@@ -78,8 +83,9 @@ npm install
 1. Crie um projeto no [painel do Supabase](https://supabase.com/dashboard).
 2. Abra o **SQL Editor** e execute o conteúdo de
    [`database/schema.sql`](database/schema.sql). Ele cria as tabelas
-   `accounts`, `products` e `products_feedbacks`, com índices, triggers e RLS,
-   e o bucket público `product-images` do Storage.
+   `accounts`, `products`, `products_feedbacks` e `product_review_summaries`
+   (cache do resumo por IA), com índices, triggers e RLS, e o bucket público
+   `product-images` do Storage.
 3. No mesmo editor, execute [`database/seed.sql`](database/seed.sql) para
    carregar 10 produtos de exemplo.
 
@@ -102,7 +108,9 @@ Preencha os valores:
 | `NEXT_PUBLIC_SUPABASE_URL` | Sim | Supabase → **Project Settings → API** → *Project URL* |
 | `SUPABASE_SERVICE_ROLE_KEY` | Sim | Supabase → **Project Settings → API** → *service_role*. Usada só no servidor; nunca a exponha no navegador. |
 | `AUTH_SESSION_SECRET` | Sim | Gere com o comando abaixo |
-| `OPENAI_API_KEY` | Não | Só para executar o agente do Mastra |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Não | Ativa o resumo das avaliações por IA com o Gemini (gratuito, gere em [aistudio.google.com/apikey](https://aistudio.google.com/apikey)). Sem ela, o site funciona normalmente e o resumo aparece como indisponível. |
+| `AI_SUMMARY_MODEL` | Não | Troca o modelo do resumo (formato `provedor/modelo`; padrão `google/gemini-3.1-flash-lite`). Também aceita `groq/...` (`GROQ_API_KEY`), `openai/...` (`OPENAI_API_KEY`) e `anthropic/...` (`ANTHROPIC_API_KEY`). |
+| `OPENAI_API_KEY` | Não | Só para o agente de suporte (scaffold) ou se o resumo usar um modelo `openai/...` |
 | `N8N_ENCRYPTION_KEY` | Não | Só para o n8n (vai no arquivo `.env`, lido pelo Docker Compose) |
 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` aparece no modelo, mas não é usada: todo acesso
@@ -195,7 +203,9 @@ Os testes cobrem as regras de negócio dos serviços (com repositórios em
 memória), a paginação por cursor, inclusive a proteção contra injeção no
 filtro, a assinatura e a expiração da sessão, a tradução de erros para HTTP, o
 middleware de erros do tRPC, a autorização de administrador, a lista de domínios
-de imagem e a validação do upload pelo conteúdo do arquivo.
+de imagem, a validação do upload pelo conteúdo do arquivo e o resumo por IA
+(cache, nova geração, falhas do modelo e proteção contra injeção de prompt nos
+comentários).
 
 ## Estrutura
 
@@ -208,11 +218,12 @@ src/
 │   ├── api/        # tRPC: contexto, middlewares, routers
 │   ├── services/   # regras de negócio
 │   ├── repositories/ # interfaces + implementações Supabase
+│   ├── ai/         # porta do resumo por IA e adaptador do Mastra
 │   ├── storage/    # armazenamento de imagens (Supabase Storage)
 │   ├── http/       # tradução de erros das rotas REST
 │   └── container.ts  # composição das dependências
 ├── trpc/           # cliente tRPC + React Query
-└── mastra/         # agente interno (scaffold)
+└── mastra/         # agentes de IA (resumo das avaliações e suporte)
 database/           # schema, migrações e seed
 n8n/                # workflow de importação de produtos
 docs/               # arquitetura e planos por feature

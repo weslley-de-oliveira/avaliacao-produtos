@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { AuthRequiredBlock } from '@/components/feedback/auth-required-block';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
 import { FeedbackList } from '@/components/feedback/feedback-list';
+import { FeedbackOverview } from '@/components/feedback/feedback-overview';
 import { ProductDetailHero } from '@/components/products/product-detail-hero';
 import type { Product } from '@/lib/validations/product';
 import { createServerCaller } from '@/server/api/caller';
@@ -61,13 +62,18 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-10 sm:px-6 lg:px-8 lg:py-14">
         <ProductDetailHero product={product} />
 
-        <FeedbackList productId={product.id} />
+        {/* Nota geral e resumo por IA à esquerda; formulário à direita. */}
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          <FeedbackOverview productId={product.id} />
 
-        {account ? (
-          <FeedbackForm productId={product.id} />
-        ) : (
-          <AuthRequiredBlock productId={product.id} />
-        )}
+          {account ? (
+            <FeedbackForm productId={product.id} />
+          ) : (
+            <AuthRequiredBlock productId={product.id} />
+          )}
+        </div>
+
+        <FeedbackList productId={product.id} />
       </div>
     </main>
   );

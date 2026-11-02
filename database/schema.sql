@@ -119,3 +119,18 @@ CREATE INDEX IF NOT EXISTS idx_products_feedbacks_product_created
   ON products_feedbacks (product_id, created_at DESC, id DESC);
 
 ALTER TABLE products_feedbacks ENABLE ROW LEVEL SECURITY;
+
+-- ---------------------------------------------------------------------------
+-- Resumo das avaliações gerado por IA (cache por produto)
+-- Espelha database/migrations/20261104000100_create_product_review_summaries.sql
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS product_review_summaries (
+  product_id TEXT PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
+  summary TEXT NOT NULL,
+  feedback_count INTEGER NOT NULL CHECK (feedback_count >= 0),
+  model TEXT NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE product_review_summaries ENABLE ROW LEVEL SECURITY;

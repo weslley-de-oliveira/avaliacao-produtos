@@ -46,7 +46,10 @@ export function FeedbackForm({ productId }: FeedbackFormProps) {
       setError(null);
       setSuccessMessage('Avaliação publicada.');
       form.reset({ score: 0, comment: '' });
-      await utils.feedbacks.listByProduct.invalidate({ productId });
+      await Promise.all([
+        utils.feedbacks.listByProduct.invalidate({ productId }),
+        utils.feedbacks.summary.invalidate({ productId }),
+      ]);
     },
     onError: (mutationError) => {
       setSuccessMessage(null);

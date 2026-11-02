@@ -8,6 +8,10 @@ import type {
   ScoreDistribution,
 } from '../repositories/feedback-repository';
 import type { ProductRepository } from '../repositories/product-repository';
+import type {
+  ReviewSummaryRepository,
+  StoredReviewSummary,
+} from '../repositories/review-summary-repository';
 
 /**
  * Implementações em memória das interfaces de repositório, usadas nos testes
@@ -173,6 +177,31 @@ export function createInMemoryFeedbackRepository(
 
       rows.push(record);
       return record;
+    },
+  };
+}
+
+export function createInMemoryReviewSummaryRepository(
+  initial: StoredReviewSummary[] = [],
+): ReviewSummaryRepository & { rows: StoredReviewSummary[] } {
+  const rows = [...initial];
+
+  return {
+    rows,
+    async find(productId) {
+      return rows.find((row) => row.productId === productId) ?? null;
+    },
+    async save(data) {
+      const saved: StoredReviewSummary = { ...data, generatedAt: timestamp(rows.length) };
+      const index = rows.findIndex((row) => row.productId === data.productId);
+
+      if (index >= 0) {
+        rows[index] = saved;
+      } else {
+        rows.push(saved);
+      }
+
+      return saved;
     },
   };
 }
