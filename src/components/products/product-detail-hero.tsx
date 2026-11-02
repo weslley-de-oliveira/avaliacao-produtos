@@ -80,9 +80,22 @@ export function ProductDetailHero({ product }: { product: Product }) {
               {product.name}
             </h1>
 
-            <p className="mt-3 max-w-[60ch] whitespace-pre-line text-sm leading-relaxed text-paper/80 sm:text-base">
-              {description || 'Sem descrição.'}
-            </p>
+            {description ? (
+              // No máximo 5 linhas (`5lh` = 5 vezes a altura de linha do próprio
+              // texto); o restante rola. Focável para rolar pelo teclado.
+              <section
+                aria-label="Descrição do produto"
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: área rolável precisa receber foco para ser rolada pelo teclado
+                tabIndex={0}
+                className="mt-3 max-h-[5lh] max-w-[60ch] overflow-y-auto whitespace-pre-line pr-3 text-sm leading-relaxed text-paper/80 [scrollbar-color:hsl(var(--paper)/0.35)_transparent] [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:text-base"
+              >
+                {description}
+              </section>
+            ) : (
+              <p className="mt-3 text-sm leading-relaxed text-paper/80 sm:text-base">
+                Sem descrição.
+              </p>
+            )}
           </div>
         </div>
       </div>
