@@ -5,6 +5,8 @@ pelos produtos, e quem tem conta deixa uma nota de 1 a 5 com comentário. A nota
 geral e a distribuição das avaliações aparecem na página de cada produto. Um
 workflow do n8n importa produtos de uma loja externa automaticamente.
 
+**Site publicado:** <https://avaliacao-produtos-iota.vercel.app>
+
 ## Funcionalidades
 
 - **Catálogo** com scroll infinito (paginação por cursor) e cards com imagem e
@@ -37,7 +39,7 @@ workflow do n8n importa produtos de uma loja externa automaticamente.
 | Automação | [n8n](https://n8n.io) em Docker (Docker Compose) |
 | IA | [Mastra](https://mastra.ai): agente que resume as avaliações de cada produto (Google Gemini 3.1 Flash-Lite por padrão, com plano gratuito) e agente interno de suporte (scaffold) |
 | Qualidade | Vitest, Biome (lint e formatação), TypeScript estrito |
-| Deploy | Pensado para a Vercel |
+| Deploy | [Vercel](https://vercel.com) |
 
 ## Arquitetura
 

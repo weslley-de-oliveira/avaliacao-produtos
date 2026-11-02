@@ -2,6 +2,10 @@
 
 ## 2026-11-04 — Resumo das avaliações por IA
 
+### Deploy
+
+- Publicado na Vercel: <https://avaliacao-produtos-iota.vercel.app>
+
 ### Adicionado
 
 - Agente do Mastra (`review-summary-agent`) que lê todas as avaliações do
